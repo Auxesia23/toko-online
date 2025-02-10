@@ -15,7 +15,7 @@ func (app *application) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.userRepo.GetByEmail(context.Background(), email)
+	user, err := app.User.GetByEmail(context.Background(), email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}

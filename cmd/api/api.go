@@ -10,8 +10,8 @@ import (
 )
 
 type application struct {
-	config   config
-	userRepo repository.UserRepository
+	Config   config
+	User repository.UserRepository
 }
 
 type config struct {
@@ -46,11 +46,11 @@ func (app *application) mount() http.Handler {
 func (app *application) run(mux http.Handler) error {
 
 	srv := &http.Server{
-		Addr:    app.config.addr,
+		Addr:    app.Config.addr,
 		Handler: mux,
 	}
 
-	log.Println("Server running on port" + app.config.addr)
+	log.Println("Server running on port" + app.Config.addr)
 
 	return srv.ListenAndServe()
 }

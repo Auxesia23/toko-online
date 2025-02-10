@@ -18,7 +18,7 @@ func (app *application) RegisterHanlder(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Periksa apakah email sudah ada di database
-	_, err = app.userRepo.GetByEmail(context.Background(), userInput.Email)
+	_, err = app.User.GetByEmail(context.Background(), userInput.Email)
 	if err == nil {
 		http.Error(w, "Email already registered", http.StatusConflict) // 409 Conflict
 		return
@@ -39,7 +39,7 @@ func (app *application) RegisterHanlder(w http.ResponseWriter, r *http.Request) 
 		Password: hashedPassword,
 	}
 
-	newUser, err := app.userRepo.Create(context.Background(), user)
+	newUser, err := app.User.Create(context.Background(), user)
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
@@ -66,7 +66,7 @@ func (app * application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	user, err = app.userRepo.GetByEmail(context.Background(), input.Email)
+	user, err = app.User.GetByEmail(context.Background(), input.Email)
 	if err != nil {
 		http.Error(w, "Invalid Credentials", http.StatusConflict) 
 		return

@@ -23,8 +23,8 @@ func main(){
 
 
 	app := &application{
-		config: cfg,
-		userRepo: userRepo,
+		Config: cfg,
+		User: userRepo,
 	}
 	
 	mux := app.mount()
