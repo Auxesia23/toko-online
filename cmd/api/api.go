@@ -12,6 +12,8 @@ import (
 type application struct {
 	Config   config
 	User repository.UserRepository
+	Product repository.ProductRepository
+	Image repository.ImageRepository
 }
 
 type config struct {
@@ -31,12 +33,17 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/user", func(r chi.Router){
 			r.Use(JWTAuthMiddleware)
-			r.Get("/me",app.GetUser)
+			r.Get("/profile",app.GetUserHandler)
+			r.Put("/profile", app.UpdateUserHandler)
 		})
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", app.RegisterHanlder)
 			r.Post("/login", app.LoginHandler)
+		})
+
+		r.Route("/product",func(r chi.Router){
+			r.Post("/create", app.CreateProductHandler)
 		})
 	})
 

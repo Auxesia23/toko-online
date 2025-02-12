@@ -9,6 +9,7 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, user models.User) (models.User, error)
 	GetByEmail(ctx context.Context, email string) (models.User, error)
+	Update(ctx context.Context, user models.User, email string) (models.User, error)
 }
 
 type UserRepo struct {
@@ -35,3 +36,19 @@ func (repo *UserRepo) GetByEmail(ctx context.Context, email string) (models.User
 	}
 	return user, nil
 }
+
+func (repo *UserRepo) Update(ctx context.Context, user models.User, email string) (models.User, error) {
+	var existingUser models.User
+
+
+	if err := repo.DB.WithContext(ctx).Where("email = ?", email).First(&existingUser).Error; err != nil {
+		return models.User{}, err
+	}
+
+	if err := repo.DB.WithContext(ctx).Model(&existingUser).Updates(user).Error; err != nil {
+		return models.User{}, err
+	}
+
+	return existingUser, nil
+}
+

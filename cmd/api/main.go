@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/Auxesia23/toko-online/internal/database"
+	"github.com/Auxesia23/toko-online/internal/image"
 	"github.com/Auxesia23/toko-online/internal/repository"
 	"github.com/Auxesia23/toko-online/internal/env"
 	"github.com/joho/godotenv"
@@ -19,12 +20,18 @@ func main(){
 		addr: env.GetString("PORT",":8000"),
 	}
 	db := database.InitDB()
+	cld := image.InitCloudinary(env.GetString("CLOUDINARY_URL",""))
+
 	userRepo := repository.NewUserRepository(db)
+	imageRepo := repository.NewImageRepository(cld)
+	productRepo := repository.NewProductRepository(db)
 
 
 	app := &application{
 		Config: cfg,
 		User: userRepo,
+		Image : imageRepo,
+		Product: productRepo,
 	}
 	
 	mux := app.mount()

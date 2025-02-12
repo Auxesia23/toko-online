@@ -20,11 +20,15 @@ type UserInput struct {
 
 
 type UserResponse struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
+	Name     *string `json:"name"`
+	Email    *string `json:"email"`
 }
 
 type UserLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UserUpdate struct {
+	Name     string `json:"name"`
 }

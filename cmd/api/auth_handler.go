@@ -47,8 +47,8 @@ func (app *application) RegisterHanlder(w http.ResponseWriter, r *http.Request) 
 
 	// Response tanpa password
 	response := models.UserResponse{
-		Name:  newUser.Name,
-		Email: newUser.Email,
+		Name:  &newUser.Name,
+		Email: &newUser.Email,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
