@@ -43,7 +43,8 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/product",func(r chi.Router){
-			r.Post("/create", app.CreateProductHandler)
+			r.Get("/",app.GetProductsListHandler)
+			r.With(SuperUserAuth).Post("/create", app.CreateProductHandler)
 		})
 	})
 

@@ -11,6 +11,7 @@ import (
 )
 
 func(app *application) CreateProductHandler(w http.ResponseWriter, r *http.Request){
+
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w,err.Error(),http.StatusBadRequest)
@@ -58,7 +59,18 @@ func(app *application) CreateProductHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(product)
 
+}
+
+func (app *application) GetProductsListHandler(w http.ResponseWriter, r *http.Request){
+	products, err := app.Product.GetList(context.Background())
+	if err != nil {
+		http.Error(w,err.Error(),http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(products)
 }

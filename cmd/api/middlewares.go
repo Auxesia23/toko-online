@@ -67,7 +67,7 @@ func SuperUserAuth(next http.Handler) http.Handler {
 		}
 		is_superuser := claims["is_superuser"]
 		log.Println(is_superuser)
-		if is_superuser != true {
+		if is_superuser == false {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
