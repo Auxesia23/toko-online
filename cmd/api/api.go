@@ -45,6 +45,9 @@ func (app *application) mount() http.Handler {
 		r.Route("/product",func(r chi.Router){
 			r.Get("/",app.GetProductsListHandler)
 			r.With(SuperUserAuth).Post("/create", app.CreateProductHandler)
+			r.Get("/{id}", app.GetSingleProductHandler)
+			r.Put("/{id}",app.UpdateProductHandler)
+			r.Delete("/{id}", app.DeleteProductHandler)
 		})
 	})
 
