@@ -25,14 +25,6 @@ func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-type ProductInput struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int32  `json:"price"`
-	Stock       int16  `json:"stock"`
-	ImageUrl    string `json:"image_url"`
-}
-
 type ProductResponse struct {
 	ID          *uuid.UUID `json:"id" gorm:"type:text;primary_key"`
 	Name        *string    `json:"name" gorm:"type:varchar(100);not null"`
