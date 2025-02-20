@@ -10,6 +10,7 @@ import (
 type CategoryRepository interface {
 	Create(context.Context, models.Category) (models.CategoryResponse, error)
 	GetList(context.Context) ([]models.CategoryResponse, error)
+	Delete(context.Context, uint)(error)
 }
 
 type CategoryRepo struct {
@@ -57,4 +58,18 @@ func (repo *CategoryRepo) GetList(ctx context.Context) ([]models.CategoryRespons
 		})
 	}
 	return response, nil
+}
+
+func (repo *CategoryRepo) Delete(ctx context.Context, id uint) (error){
+	var category models.Category
+	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&category).Error
+	if err != nil {
+		return err
+	}
+
+	err = repo.DB.WithContext(ctx).Delete(&category).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

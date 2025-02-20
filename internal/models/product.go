@@ -18,6 +18,8 @@ type Product struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	Category Category `json:"category" gorm:"foreignKey:CategoryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {
@@ -26,10 +28,11 @@ func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 type ProductResponse struct {
-	ID          *uuid.UUID `json:"id" gorm:"type:text;primary_key"`
-	Name        *string    `json:"name" gorm:"type:varchar(100);not null"`
-	Description *string    `json:"description" gorm:"type:varchar(255);not null"`
-	Price       *int32     `json:"price" gorm:"type:int(12);not null"`
-	Stock       *int16     `json:"stock" gorm:"type:int(8);not null"`
-	ImageUrl    *string    `json:"image_url" gorm:"type:varchar(100);not null"`
+	ID          *uuid.UUID `json:"id" `
+	Name        *string    `json:"name"`
+	Description *string    `json:"description"`
+	Price       *int32     `json:"price" `
+	Stock       *int16     `json:"stock" `
+	ImageUrl    *string    `json:"image_url" `
+	Category    *Category    `json:"category"`
 }

@@ -12,9 +12,9 @@ import (
 type ProductRepository interface {
 	Create(ctx context.Context, product models.Product) (models.ProductResponse, error)
 	GetList(ctx context.Context) ([]models.ProductResponse, error)
-	GetById(ctx context.Context, id uuid.UUID)(models.ProductResponse, error)
+	GetById(ctx context.Context, id uuid.UUID) (models.ProductResponse, error)
 	Update(ctx context.Context, product models.ProductResponse) (models.ProductResponse, error)
-	Delete(ctx context.Context, id uuid.UUID)(error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type ProductRepo struct {
@@ -40,6 +40,7 @@ func (repo *ProductRepo) Create(ctx context.Context, product models.Product) (mo
 		Price:       &product.Price,
 		Stock:       &product.Stock,
 		ImageUrl:    &product.ImageUrl,
+		Category:    &product.Category,
 	}
 	return response, nil
 }
@@ -61,13 +62,14 @@ func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse,
 			Price:       &product.Price,
 			Stock:       &product.Stock,
 			ImageUrl:    &product.ImageUrl,
+			Category:    &product.Category,
 		})
 	}
 
 	return response, nil
 }
 
-func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID ) (models.ProductResponse, error){
+func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (models.ProductResponse, error) {
 	var product models.Product
 	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&product).Error
 	if err != nil {
@@ -80,6 +82,7 @@ func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID ) (models.Pro
 		Price:       &product.Price,
 		Stock:       &product.Stock,
 		ImageUrl:    &product.ImageUrl,
+		Category:    &product.Category,
 	}
 	return response, nil
 }
@@ -101,18 +104,18 @@ func (repo *ProductRepo) Update(ctx context.Context, product models.ProductRespo
 		Price:       &oldProduct.Price,
 		Stock:       &oldProduct.Stock,
 		ImageUrl:    &oldProduct.ImageUrl,
+		Category:    &oldProduct.Category,
 	}
 	return response, nil
 }
 
-
-func (repo *ProductRepo) Delete(ctx context.Context, id uuid.UUID) (error){
+func (repo *ProductRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	var product models.Product
 	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&product).Error
 	if err != nil {
 		return err
 	}
-	err = repo.DB.WithContext(ctx).Delete(&product).Error 
+	err = repo.DB.WithContext(ctx).Delete(&product).Error
 	if err != nil {
 		return err
 	}
