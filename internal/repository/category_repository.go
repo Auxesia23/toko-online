@@ -11,6 +11,7 @@ import (
 type CategoryRepository interface {
 	Create(context.Context, models.Category) (models.CategoryResponse, error)
 	GetList(context.Context) ([]models.CategoryResponse, error)
+	GetByID(context.Context, uint) (models.CategoryResponse, error)
 	Delete(context.Context, uint) error
 }
 
@@ -42,8 +43,8 @@ func (repo *CategoryRepo) Create(ctx context.Context, category models.Category) 
 	}
 
 	response := models.CategoryResponse{
-		ID:   &category.ID,
-		Name: &category.Name,
+		ID:   category.ID,
+		Name: category.Name,
 	}
 
 	return response, nil
@@ -59,8 +60,8 @@ func (repo *CategoryRepo) GetList(ctx context.Context) ([]models.CategoryRespons
 	var response []models.CategoryResponse
 	for _, category := range categories {
 		response = append(response, models.CategoryResponse{
-			ID:   &category.ID,
-			Name: &category.Name,
+			ID:   category.ID,
+			Name: category.Name,
 		})
 	}
 	return response, nil
@@ -79,3 +80,20 @@ func (repo *CategoryRepo) Delete(ctx context.Context, id uint) error {
 	}
 	return nil
 }
+
+func (repo *CategoryRepo) GetByID(ctx context.Context, id uint) (models.CategoryResponse, error) {
+	var category models.Category
+	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&category).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return models.CategoryResponse{}, err
+	} else if err != nil {
+		return models.CategoryResponse{}, err
+	}
+
+	return models.CategoryResponse{
+		ID:   category.ID,
+		Name: category.Name,
+	}, nil
+}
+

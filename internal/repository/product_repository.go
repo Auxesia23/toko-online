@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"gorm.io/gorm"
 
@@ -13,8 +12,8 @@ import (
 type ProductRepository interface {
 	Create(ctx context.Context, product models.Product) (models.ProductResponse, error)
 	GetList(ctx context.Context) ([]models.ProductResponse, error)
-	GetById(ctx context.Context, id uuid.UUID) (models.ProductResponse, error)
-	Update(ctx context.Context, product models.ProductResponse) (models.ProductResponse, error)
+	GetById(ctx context.Context, id uuid.UUID) (models.Product, error)
+	Update(ctx context.Context, product models.Product) (models.Product, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -29,24 +28,19 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 }
 
 func (repo *ProductRepo) Create(ctx context.Context, product models.Product) (models.ProductResponse, error) {
-	var existingCategory models.Category
-	if err := repo.DB.WithContext(ctx).First(&existingCategory, product.Category.ID).Error; err != nil {
-		return models.ProductResponse{}, errors.New("category not found")
-	}
-
 	err := repo.DB.WithContext(ctx).Create(&product).Error
 	if err != nil {
 		return models.ProductResponse{}, err
 	}
 
-	err = repo.DB.WithContext(ctx).Preload("Category").First(&product, product.ID).Error
+	err = repo.DB.WithContext(ctx).Preload("Category").First(&product, &product.ID).Error
 	if err != nil {
 		return models.ProductResponse{}, err
 	}
 
 	categoryResponse := models.CategoryResponse{
-		ID:   &product.Category.ID,
-		Name: &product.Category.Name,
+		ID:   product.Category.ID,
+		Name: product.Category.Name,
 	}
 
 	response := models.ProductResponse{
@@ -72,8 +66,8 @@ func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse,
 
 	for _, product := range products {
 		categoryResponse := models.CategoryResponse{
-			ID:   &product.Category.ID,
-			Name: &product.Category.Name,
+			ID:   product.Category.ID,
+			Name: product.Category.Name,
 		}
 
 		response = append(response, models.ProductResponse{
@@ -90,56 +84,39 @@ func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse,
 	return response, nil
 }
 
-func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (models.ProductResponse, error) {
+func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (models.Product, error) {
 	var product models.Product
 	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&product).Error
 	if err != nil {
-		return models.ProductResponse{}, err
+		return models.Product{}, err
+	}
+	var category models.Category
+	err = repo.DB.WithContext(ctx).Where("id = ?",product.CategoryID).First(&category).Error
+	if err == nil {
+		product.Category = category
 	}
 
-	categoryResponse := models.CategoryResponse{
-		ID:   &product.Category.ID,
-		Name: &product.Category.Name,
-	}
-
-	response := models.ProductResponse{
-		ID:          &product.ID,
-		Name:        &product.Name,
-		Description: &product.Description,
-		Price:       &product.Price,
-		Stock:       &product.Stock,
-		ImageUrl:    &product.ImageUrl,
-		Category:    &categoryResponse,
-	}
-	return response, nil
+	return product, nil
 }
 
-func (repo *ProductRepo) Update(ctx context.Context, product models.ProductResponse) (models.ProductResponse, error) {
+func (repo *ProductRepo) Update(ctx context.Context, product models.Product) (models.Product, error) {
 	var oldProduct models.Product
 	err := repo.DB.WithContext(ctx).Where("id = ?", product.ID).First(&oldProduct).Error
 	if err != nil {
-		return models.ProductResponse{}, err
+		return models.Product{}, err
 	}
 	err = repo.DB.WithContext(ctx).Model(&oldProduct).Updates(product).Error
 	if err != nil {
-		return models.ProductResponse{}, err
+		return models.Product{}, err
 	}
 
-	categoryResponse := models.CategoryResponse{
-		ID:   &oldProduct.CategoryID,
-		Name: &oldProduct.Category.Name,
+	var category models.Category
+	err = repo.DB.WithContext(ctx).Where("id = ?",product.CategoryID).First(&category).Error
+	if err == nil {
+		oldProduct.Category = category
 	}
 
-	response := models.ProductResponse{
-		ID:          &oldProduct.ID,
-		Name:        &oldProduct.Name,
-		Description: &oldProduct.Description,
-		Price:       &oldProduct.Price,
-		Stock:       &oldProduct.Stock,
-		ImageUrl:    &oldProduct.ImageUrl,
-		Category:    &categoryResponse,
-	}
-	return response, nil
+	return oldProduct, nil
 }
 
 func (repo *ProductRepo) Delete(ctx context.Context, id uuid.UUID) error {

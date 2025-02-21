@@ -41,11 +41,6 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	category_id, err := strconv.Atoi(r.FormValue("category_id"))
-	if err != nil {
-		http.Error(w, "Invalid category_id format", http.StatusBadRequest)
-	}
-
 	imageUrl, err := app.Image.Upload(context.Background(), file, handler.Filename)
 	if err != nil {
 		log.Println(err)
@@ -53,9 +48,21 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	category_id, err := strconv.Atoi(r.FormValue("category_id"))
+	if err != nil {
+		http.Error(w, "Invalid category_id format", http.StatusBadRequest)
+		return
+	}
+
+	category, err := app.Category.GetByID(context.Background(), uint(category_id))
+	if err != nil {
+		http.Error(w, "Invalid category id", http.StatusNotFound)
+		return
+	}
+
 	product, err := app.Product.Create(context.Background(), models.Product{
 		Name:        name,
-		CategoryID:  uint(category_id),
+		CategoryID:  category.ID,
 		Description: description,
 		Price:       int32(price),
 		Stock:       int16(stock),
@@ -125,30 +132,33 @@ func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Requ
 
 	name := r.FormValue("name")
 	if name != "" {
-		product.Name = &name
+		product.Name = name
 	}
 
-	category_id, err := strconv.Atoi(r.FormValue("category_id"))
-	if err != nil{
-		category_uint := uint(category_id)
-		product.Category.ID = &category_uint
+	if categoryID, err := strconv.Atoi(r.FormValue("category_id")); err == nil {
+		category, err := app.Category.GetByID(context.Background(), uint(categoryID))
+		if err != nil {
+			http.Error(w, "Category not found", http.StatusNotFound)
+			return
+		}
+		product.CategoryID = category.ID
 	}
 
 	description := r.FormValue("description")
 	if description != "" {
-		product.Description = &description
+		product.Description = description
 	}
 
 	priceInt, err := strconv.Atoi(r.FormValue("price"))
 	if err == nil {
 		price := int32(priceInt)
-		product.Price = &price
+		product.Price = price
 	}
 
 	stockInt, err := strconv.Atoi(r.FormValue("stock"))
 	if err == nil {
 		stock := int16(stockInt)
-		product.Stock = &stock
+		product.Stock = stock
 	}
 
 	file, handler, err := r.FormFile("image")
@@ -161,7 +171,7 @@ func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "Failed to upload image", http.StatusInternalServerError)
 			return
 		}
-		product.ImageUrl = &imageUrl
+		product.ImageUrl = imageUrl
 	}
 
 	updatedProduct, err := app.Product.Update(context.Background(), product)
