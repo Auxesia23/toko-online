@@ -14,6 +14,7 @@ type application struct {
 	User repository.UserRepository
 	Product repository.ProductRepository
 	Image repository.ImageRepository
+	Category repository.CategoryRepository
 }
 
 type config struct {
@@ -48,6 +49,10 @@ func (app *application) mount() http.Handler {
 			r.With(SuperUserAuth).Get("/{id}", app.GetSingleProductHandler)
 			r.With(SuperUserAuth).Put("/{id}",app.UpdateProductHandler)
 			r.With(SuperUserAuth).Delete("/{id}", app.DeleteProductHandler)
+		})
+
+		r.Route("/category",func(r chi.Router) {
+			r.Post("/create", app.CreateCategoryHanlder)
 		})
 	})
 

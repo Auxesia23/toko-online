@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Auxesia23/toko-online/internal/models"
 	"gorm.io/gorm"
@@ -10,7 +11,7 @@ import (
 type CategoryRepository interface {
 	Create(context.Context, models.Category) (models.CategoryResponse, error)
 	GetList(context.Context) ([]models.CategoryResponse, error)
-	Delete(context.Context, uint)(error)
+	Delete(context.Context, uint) error
 }
 
 type CategoryRepo struct {
@@ -25,9 +26,14 @@ func NewCategoryRepository(db *gorm.DB) CategoryRepository {
 
 func (repo *CategoryRepo) Create(ctx context.Context, category models.Category) (models.CategoryResponse, error) {
 	var existingCategory models.Category
+
 	err := repo.DB.WithContext(ctx).Where("name = ?", category.Name).First(&existingCategory).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return models.CategoryResponse{}, err
+	}
+
+	if err == nil {
+		return models.CategoryResponse{}, errors.New("category already exists")
 	}
 
 	err = repo.DB.WithContext(ctx).Create(&category).Error
@@ -60,7 +66,7 @@ func (repo *CategoryRepo) GetList(ctx context.Context) ([]models.CategoryRespons
 	return response, nil
 }
 
-func (repo *CategoryRepo) Delete(ctx context.Context, id uint) (error){
+func (repo *CategoryRepo) Delete(ctx context.Context, id uint) error {
 	var category models.Category
 	err := repo.DB.WithContext(ctx).Where("id = ?", id).First(&category).Error
 	if err != nil {

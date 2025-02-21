@@ -41,6 +41,11 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	category_id, err := strconv.Atoi(r.FormValue("category_id"))
+	if err != nil {
+		http.Error(w, "Invalid category_id format", http.StatusBadRequest)
+	}
+
 	imageUrl, err := app.Image.Upload(context.Background(), file, handler.Filename)
 	if err != nil {
 		log.Println(err)
@@ -50,6 +55,7 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 
 	product, err := app.Product.Create(context.Background(), models.Product{
 		Name:        name,
+		CategoryID:  uint(category_id),
 		Description: description,
 		Price:       int32(price),
 		Stock:       int16(stock),
@@ -78,15 +84,15 @@ func (app *application) GetProductsListHandler(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(products)
 }
 
-func (app *application) GetSingleProductHandler(w http.ResponseWriter, r *http.Request){
-	idStr := chi.URLParam(r,"id")
+func (app *application) GetSingleProductHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w,err.Error(),http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	product, err := app.Product.GetById(context.Background(),id)
+	product, err := app.Product.GetById(context.Background(), id)
 	if err != nil {
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
@@ -95,15 +101,13 @@ func (app *application) GetSingleProductHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(product)
 
-	
-
 }
 
 func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w,err.Error(),http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -122,6 +126,12 @@ func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Requ
 	name := r.FormValue("name")
 	if name != "" {
 		product.Name = &name
+	}
+
+	category_id, err := strconv.Atoi(r.FormValue("category_id"))
+	if err != nil{
+		category_uint := uint(category_id)
+		product.Category.ID = &category_uint
 	}
 
 	description := r.FormValue("description")
@@ -153,7 +163,7 @@ func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Requ
 		}
 		product.ImageUrl = &imageUrl
 	}
-	
+
 	updatedProduct, err := app.Product.Update(context.Background(), product)
 	if err != nil {
 		http.Error(w, "Failed to update product", http.StatusInternalServerError)
@@ -165,17 +175,17 @@ func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(updatedProduct)
 }
 
-func (app *application) DeleteProductHandler(w http.ResponseWriter, r *http.Request){
-	idSrt := chi.URLParam(r,"id")
+func (app *application) DeleteProductHandler(w http.ResponseWriter, r *http.Request) {
+	idSrt := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idSrt)
 	if err != nil {
-		http.Error(w,err.Error(),http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = app.Product.Delete(context.Background(),id)
+	err = app.Product.Delete(context.Background(), id)
 	if err != nil {
-		http.Error(w,err.Error(),http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

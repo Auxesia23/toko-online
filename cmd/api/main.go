@@ -25,6 +25,7 @@ func main(){
 	userRepo := repository.NewUserRepository(db)
 	imageRepo := repository.NewImageRepository(cld)
 	productRepo := repository.NewProductRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
 
 
 	app := &application{
@@ -32,6 +33,7 @@ func main(){
 		User: userRepo,
 		Image : imageRepo,
 		Product: productRepo,
+		Category: categoryRepo,
 	}
 	
 	mux := app.mount()

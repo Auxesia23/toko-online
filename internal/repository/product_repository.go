@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -28,9 +29,24 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 }
 
 func (repo *ProductRepo) Create(ctx context.Context, product models.Product) (models.ProductResponse, error) {
+	var existingCategory models.Category
+	if err := repo.DB.WithContext(ctx).First(&existingCategory, product.Category.ID).Error; err != nil {
+		return models.ProductResponse{}, errors.New("category not found")
+	}
+
 	err := repo.DB.WithContext(ctx).Create(&product).Error
 	if err != nil {
 		return models.ProductResponse{}, err
+	}
+
+	err = repo.DB.WithContext(ctx).Preload("Category").First(&product, product.ID).Error
+	if err != nil {
+		return models.ProductResponse{}, err
+	}
+
+	categoryResponse := models.CategoryResponse{
+		ID:   &product.Category.ID,
+		Name: &product.Category.Name,
 	}
 
 	response := models.ProductResponse{
@@ -40,14 +56,14 @@ func (repo *ProductRepo) Create(ctx context.Context, product models.Product) (mo
 		Price:       &product.Price,
 		Stock:       &product.Stock,
 		ImageUrl:    &product.ImageUrl,
-		Category:    &product.Category,
+		Category:    &categoryResponse,
 	}
 	return response, nil
 }
 
 func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse, error) {
 	var products []models.Product
-	err := repo.DB.WithContext(ctx).Find(&products).Error
+	err := repo.DB.WithContext(ctx).Preload("Category").Find(&products).Error
 	if err != nil {
 		return []models.ProductResponse{}, err
 	}
@@ -55,6 +71,11 @@ func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse,
 	var response []models.ProductResponse
 
 	for _, product := range products {
+		categoryResponse := models.CategoryResponse{
+			ID:   &product.Category.ID,
+			Name: &product.Category.Name,
+		}
+
 		response = append(response, models.ProductResponse{
 			ID:          &product.ID,
 			Name:        &product.Name,
@@ -62,7 +83,7 @@ func (repo *ProductRepo) GetList(ctx context.Context) ([]models.ProductResponse,
 			Price:       &product.Price,
 			Stock:       &product.Stock,
 			ImageUrl:    &product.ImageUrl,
-			Category:    &product.Category,
+			Category:    &categoryResponse,
 		})
 	}
 
@@ -75,6 +96,12 @@ func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (models.Prod
 	if err != nil {
 		return models.ProductResponse{}, err
 	}
+
+	categoryResponse := models.CategoryResponse{
+		ID:   &product.Category.ID,
+		Name: &product.Category.Name,
+	}
+
 	response := models.ProductResponse{
 		ID:          &product.ID,
 		Name:        &product.Name,
@@ -82,7 +109,7 @@ func (repo *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (models.Prod
 		Price:       &product.Price,
 		Stock:       &product.Stock,
 		ImageUrl:    &product.ImageUrl,
-		Category:    &product.Category,
+		Category:    &categoryResponse,
 	}
 	return response, nil
 }
@@ -97,6 +124,12 @@ func (repo *ProductRepo) Update(ctx context.Context, product models.ProductRespo
 	if err != nil {
 		return models.ProductResponse{}, err
 	}
+
+	categoryResponse := models.CategoryResponse{
+		ID:   &oldProduct.CategoryID,
+		Name: &oldProduct.Category.Name,
+	}
+
 	response := models.ProductResponse{
 		ID:          &oldProduct.ID,
 		Name:        &oldProduct.Name,
@@ -104,7 +137,7 @@ func (repo *ProductRepo) Update(ctx context.Context, product models.ProductRespo
 		Price:       &oldProduct.Price,
 		Stock:       &oldProduct.Stock,
 		ImageUrl:    &oldProduct.ImageUrl,
-		Category:    &oldProduct.Category,
+		Category:    &categoryResponse,
 	}
 	return response, nil
 }
