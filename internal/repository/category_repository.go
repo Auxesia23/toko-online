@@ -32,7 +32,6 @@ func (repo *CategoryRepo) Create(ctx context.Context, category models.Category) 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return models.CategoryResponse{}, err
 	}
-
 	if err == nil {
 		return models.CategoryResponse{}, errors.New("category already exists")
 	}
@@ -43,8 +42,8 @@ func (repo *CategoryRepo) Create(ctx context.Context, category models.Category) 
 	}
 
 	response := models.CategoryResponse{
-		ID:   category.ID,
-		Name: category.Name,
+		ID:   &category.ID,
+		Name: &category.Name,
 	}
 
 	return response, nil
@@ -60,8 +59,8 @@ func (repo *CategoryRepo) GetList(ctx context.Context) ([]models.CategoryRespons
 	var response []models.CategoryResponse
 	for _, category := range categories {
 		response = append(response, models.CategoryResponse{
-			ID:   category.ID,
-			Name: category.Name,
+			ID:   &category.ID,
+			Name: &category.Name,
 		})
 	}
 	return response, nil
@@ -92,8 +91,8 @@ func (repo *CategoryRepo) GetByID(ctx context.Context, id uint) (models.Category
 	}
 
 	return models.CategoryResponse{
-		ID:   category.ID,
-		Name: category.Name,
+		ID:   &category.ID,
+		Name: &category.Name,
 	}, nil
 }
 

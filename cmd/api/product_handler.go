@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -43,7 +42,6 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 
 	imageUrl, err := app.Image.Upload(context.Background(), file, handler.Filename)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Failed to upload image", http.StatusInternalServerError)
 		return
 	}
@@ -54,22 +52,16 @@ func (app *application) CreateProductHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	category, err := app.Category.GetByID(context.Background(), uint(category_id))
-	if err != nil {
-		http.Error(w, "Invalid category id", http.StatusNotFound)
-		return
-	}
-
 	product, err := app.Product.Create(context.Background(), models.Product{
 		Name:        name,
-		CategoryID:  category.ID,
+		CategoryID:  uint(category_id),
 		Description: description,
 		Price:       int32(price),
 		Stock:       int16(stock),
 		ImageUrl:    imageUrl,
 	})
 	if err != nil {
-		http.Error(w, "Failed to upload image", http.StatusInternalServerError)
+		http.Error(w, "Failed to create product", http.StatusBadRequest)
 		return
 	}
 
@@ -112,71 +104,58 @@ func (app *application) GetSingleProductHandler(w http.ResponseWriter, r *http.R
 
 func (app *application) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
+	id, _ := uuid.Parse(idStr)
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	product, err := app.Product.GetById(context.Background(), id)
-	if err != nil {
-		http.Error(w, "Product not found", http.StatusNotFound)
 		return
 	}
 
 	name := r.FormValue("name")
-	if name != "" {
-		product.Name = name
-	}
-
-	if categoryID, err := strconv.Atoi(r.FormValue("category_id")); err == nil {
-		category, err := app.Category.GetByID(context.Background(), uint(categoryID))
-		if err != nil {
-			http.Error(w, "Category not found", http.StatusNotFound)
-			return
-		}
-		product.CategoryID = category.ID
-	}
-
 	description := r.FormValue("description")
-	if description != "" {
-		product.Description = description
-	}
 
+	categoryID, err := strconv.Atoi(r.FormValue("category_id"))
+	if err != nil {
+		http.Error(w, "Invalid Category id", http.StatusBadRequest)
+		return
+	}
 	priceInt, err := strconv.Atoi(r.FormValue("price"))
-	if err == nil {
-		price := int32(priceInt)
-		product.Price = price
+	if err != nil {
+		http.Error(w, "Invalid price format", http.StatusBadRequest)
+		return
 	}
-
 	stockInt, err := strconv.Atoi(r.FormValue("stock"))
-	if err == nil {
-		stock := int16(stockInt)
-		product.Stock = stock
+	if err != nil {
+		http.Error(w, "Invalid stock format", http.StatusBadRequest)
+		return
 	}
 
+	var ImageUrl string
 	file, handler, err := r.FormFile("image")
 	if err == nil {
 		defer file.Close()
 
 		imageUrl, err := app.Image.Upload(context.Background(), file, handler.Filename)
 		if err != nil {
-			log.Println(err)
 			http.Error(w, "Failed to upload image", http.StatusInternalServerError)
 			return
 		}
-		product.ImageUrl = imageUrl
+		ImageUrl = imageUrl
+	}
+
+	product := models.Product{
+		ID:          id,
+		Name:        name,
+		Description: description,
+		CategoryID:  uint(categoryID),
+		Price:       int32(priceInt),
+		Stock:       int16(stockInt),
+		ImageUrl:    ImageUrl,
 	}
 
 	updatedProduct, err := app.Product.Update(context.Background(), product)
 	if err != nil {
-		http.Error(w, "Failed to update product", http.StatusInternalServerError)
+		http.Error(w, "Failed to update product", http.StatusBadRequest)
 		return
 	}
 

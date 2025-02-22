@@ -52,7 +52,11 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/category",func(r chi.Router) {
+			r.Use(SuperUserAuth)
 			r.Post("/create", app.CreateCategoryHanlder)
+			r.Get("/",app.GetCategoryListHandler)
+			r.Get("/{id}", app.GetCategoryHandler)
+			r.Delete("/{id}", app.DeleteCategoryHandler)
 		})
 	})
 
