@@ -12,6 +12,7 @@ type CategoryRepository interface {
 	Create(context.Context, models.Category) (models.CategoryResponse, error)
 	GetList(context.Context) ([]models.CategoryResponse, error)
 	GetByID(context.Context, uint) (models.CategoryResponse, error)
+	Update(context.Context, models.Category, uint)(models.CategoryResponse, error)
 	Delete(context.Context, uint) error
 }
 
@@ -96,3 +97,20 @@ func (repo *CategoryRepo) GetByID(ctx context.Context, id uint) (models.Category
 	}, nil
 }
 
+
+func (repo *CategoryRepo) Update(ctx context.Context, category models.Category, id uint)(models.CategoryResponse, error){
+	var oldCategory models.Category
+	err := repo.DB.WithContext(ctx).First(&oldCategory,id).Error
+	if err != nil {
+		return models.CategoryResponse{}, err
+	}
+	err = repo.DB.WithContext(ctx).Model(&oldCategory).Updates(&category).Error
+	if err != nil {
+		return models.CategoryResponse{}, err
+	}
+	response := models.CategoryResponse{
+		ID: &oldCategory.ID,
+		Name: &oldCategory.Name,
+	}
+	return response, nil
+}

@@ -73,3 +73,29 @@ func (app *application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Req
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *application) UpdateCategoryHanlder(w http.ResponseWriter, r *http.Request){
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w,"Invalid id format",http.StatusBadRequest)
+		return
+	}
+
+	var category models.Category
+	err =json.NewDecoder(r.Body).Decode(&category)
+	if err != nil {
+		http.Error(w,err.Error(),http.StatusBadRequest)
+		return
+	}
+
+	updatedCategory, err := app.Category.Update(context.Background(),category,uint(id))
+	if err != nil {
+		http.Error(w,err.Error(),http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&updatedCategory)
+}

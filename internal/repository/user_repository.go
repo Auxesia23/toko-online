@@ -45,7 +45,7 @@ func (repo *UserRepo) Update(ctx context.Context, user models.User, email string
 		return models.User{}, err
 	}
 
-	if err := repo.DB.WithContext(ctx).Model(&existingUser).Updates(user).Error; err != nil {
+	if err := repo.DB.WithContext(ctx).Model(&existingUser).Updates(&user).Error; err != nil {
 		return models.User{}, err
 	}
 

@@ -57,6 +57,7 @@ func (app *application) mount() http.Handler {
 			r.Get("/",app.GetCategoryListHandler)
 			r.Get("/{id}", app.GetCategoryHandler)
 			r.Delete("/{id}", app.DeleteCategoryHandler)
+			r.Put("/{id}", app.UpdateCategoryHanlder)
 		})
 	})
 
