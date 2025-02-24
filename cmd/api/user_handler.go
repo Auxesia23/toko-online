@@ -9,29 +9,24 @@ import (
 )
 
 func (app *application) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(UserEmailContextKey).(string)
+	userID, ok := r.Context().Value("userID").(uint)
 	if !ok {
 		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
 		return
 	}
 
-	user, err := app.User.GetByEmail(context.Background(), email)
+	user, err := app.User.GetByID(context.Background(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 
-	response := models.UserResponse{
-		Email: &user.Email,
-		Name:  &user.Name,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(user)
 }
 
 func (app *application) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(UserEmailContextKey).(string)
+	userID, ok := r.Context().Value("userID").(uint)
 	if !ok {
 		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
 		return
@@ -44,27 +39,15 @@ func (app *application) UpdateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	
-
-	user, err := app.User.GetByEmail(context.Background(), email)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-	}
-
 	updatedUser, err := app.User.Update(context.Background(), models.User{
 		Name: input.Name,
-	},user.Email)
+	}, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response := models.UserResponse{
-		Name: &updatedUser.Name,
-		Email: &updatedUser.Email,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(updatedUser)
 }

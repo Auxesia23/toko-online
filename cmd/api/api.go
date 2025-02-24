@@ -15,6 +15,7 @@ type application struct {
 	Product repository.ProductRepository
 	Image repository.ImageRepository
 	Category repository.CategoryRepository
+	Cart repository.CartRepository
 }
 
 type config struct {
@@ -52,12 +53,17 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/category",func(r chi.Router) {
-			r.Use(SuperUserAuth)
-			r.Post("/create", app.CreateCategoryHanlder)
+			r.With(SuperUserAuth).Post("/create", app.CreateCategoryHanlder)
+			r.With(SuperUserAuth).Delete("/{id}", app.DeleteCategoryHandler)
+			r.With(SuperUserAuth).Put("/{id}", app.UpdateCategoryHanlder)
 			r.Get("/",app.GetCategoryListHandler)
 			r.Get("/{id}", app.GetCategoryHandler)
-			r.Delete("/{id}", app.DeleteCategoryHandler)
-			r.Put("/{id}", app.UpdateCategoryHanlder)
+		})
+
+		r.Route("/cart",func(r chi.Router) {
+			r.Use(JWTAuthMiddleware)
+			r.Post("/create", app.CreatecartHandler)
+			r.Get("/", app.GetCartsHandler)
 		})
 	})
 

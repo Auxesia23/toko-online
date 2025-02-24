@@ -10,10 +10,6 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type ContextKey string
-
-const UserEmailContextKey ContextKey = "userEmail"
-
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -36,8 +32,14 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		email := claims["email"]
-		ctx := context.WithValue(r.Context(), UserEmailContextKey, email)
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			http.Error(w, "Invalid user_id in token", http.StatusUnauthorized)
+			return
+		}
+		userID := uint(userIDFloat)
+
+		ctx := context.WithValue(r.Context(), "userID", userID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 
@@ -71,9 +73,15 @@ func SuperUserAuth(next http.Handler) http.Handler {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
-		email := claims["email"]
 
-		ctx := context.WithValue(r.Context(), UserEmailContextKey, email)
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			http.Error(w, "Invalid user_id in token", http.StatusUnauthorized)
+			return
+		}
+		
+		userID := uint(userIDFloat)
+		ctx := context.WithValue(r.Context(), "userID", userID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 

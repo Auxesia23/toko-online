@@ -26,6 +26,7 @@ func main(){
 	imageRepo := repository.NewImageRepository(cld)
 	productRepo := repository.NewProductRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
+	cartRepo := repository.NewCartRepository(db)
 
 
 	app := &application{
@@ -34,6 +35,7 @@ func main(){
 		Image : imageRepo,
 		Product: productRepo,
 		Category: categoryRepo,
+		Cart : cartRepo,
 	}
 	
 	mux := app.mount()
