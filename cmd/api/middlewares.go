@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -68,7 +67,6 @@ func SuperUserAuth(next http.Handler) http.Handler {
 			return
 		}
 		is_superuser := claims["is_superuser"]
-		log.Println(is_superuser)
 		if is_superuser == false {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
@@ -79,7 +77,7 @@ func SuperUserAuth(next http.Handler) http.Handler {
 			http.Error(w, "Invalid user_id in token", http.StatusUnauthorized)
 			return
 		}
-		
+
 		userID := uint(userIDFloat)
 		ctx := context.WithValue(r.Context(), "userID", userID)
 

@@ -15,7 +15,6 @@ type Cart struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	User    User    `json:"user" gorm:"foreignKey:UserID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
 	Product Product `json:"product" gorm:"foreignKey:ProductID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
@@ -26,13 +25,30 @@ func (cart *Cart) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
+func (p *Product) AfterDelete(tx *gorm.DB) error {
+	return tx.Where("product_id = ?", p.ID).Delete(&Cart{}).Error
+}
+
+
 type CartInput struct {
 	ProductID uuid.UUID `json:"product_id"`
 	Quantity  int16     `json:"quantity"`
 }
 
+type CartUpdate struct {
+	Quantity  int16     `json:"quantity"`
+}
+
 type CartResponse struct {
-	ProductName  *string `json:"product"`
-	ProductPrice *int32  `json:"product_price"`
-	Quantity     *int16  `json:"quantity"`
+	ID       *uuid.UUID   `json:"id"`
+	Quantity *int16       `json:"quantity"`
+	Product  *CartProduct `json:"product"`
+}
+
+type CartProduct struct {
+	ID       *uuid.UUID `json:"id"`
+	Name     *string    `json:"name"`
+	Price    *int32     `json:"price" `
+	Stock    *int16     `json:"stock" `
+	ImageUrl *string    `json:"image_url" `
 }

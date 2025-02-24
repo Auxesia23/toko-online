@@ -20,7 +20,7 @@ type Product struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	Category Category `json:"category" gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Category Category `json:"category" gorm:"foreignKey:CategoryID;constraint:OnUpdate:RESTRICT,OnDelete:SET NULL;"`
 }
 
 func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {
