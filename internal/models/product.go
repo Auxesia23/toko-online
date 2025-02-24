@@ -28,6 +28,10 @@ func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
+func (p *Product) AfterDelete(tx *gorm.DB) error {
+	return tx.Where("product_id = ?", p.ID).Delete(&Cart{}).Error
+}
+
 type ProductResponse struct {
 	ID          *uuid.UUID        `json:"id" `
 	Name        *string           `json:"name"`

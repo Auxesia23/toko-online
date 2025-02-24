@@ -24,15 +24,13 @@ func (app *application) CreatecartHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	cart, err := app.Cart.Create(context.Background(), input, userID)
+	err = app.Cart.Create(context.Background(), input, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(cart)
 }
 
 func (app *application) GetCartsHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,38 +49,6 @@ func (app *application) GetCartsHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(carts)
-}
-
-func (app *application) UpdateCartHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(uint)
-	if !ok {
-		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
-		return
-	}
-
-	cartIdStr := chi.URLParam(r, "id")
-	cartID, err := uuid.Parse(cartIdStr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var input models.CartUpdate
-	err = json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	cart, err := app.Cart.Update(context.Background(), input,cartID , userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(cart)
 }
 
 func (app *application) DeleteCartHandler(w http.ResponseWriter, r *http.Request){
@@ -106,4 +72,48 @@ func (app *application) DeleteCartHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) IncrementCartHandler(w http.ResponseWriter, r *http.Request){
+	userID, ok := r.Context().Value("userID").(uint)
+	if !ok {
+		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
+		return
+	}
+
+	cartIdStr := chi.URLParam(r, "id")
+	cartID, err := uuid.Parse(cartIdStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = app.Cart.Increment(context.Background(),cartID,userID)
+	if err != nil {
+		http.Error(w,err.Error(),http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (app *application) DecrementsCartHandler(w http.ResponseWriter, r *http.Request){
+	userID, ok := r.Context().Value("userID").(uint)
+	if !ok {
+		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
+		return
+	}
+
+	cartIdStr := chi.URLParam(r, "id")
+	cartID, err := uuid.Parse(cartIdStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = app.Cart.Decrement(context.Background(),cartID,userID)
+	if err != nil {
+		http.Error(w,err.Error(),http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

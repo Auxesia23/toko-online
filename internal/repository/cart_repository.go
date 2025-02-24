@@ -10,10 +10,11 @@ import (
 )
 
 type CartRepository interface {
-	Create(ctx context.Context, input models.CartInput, userID uint) (models.CartResponse, error)
+	Create(ctx context.Context, input models.CartInput, userID uint) (error)
 	GetList(ctx context.Context, userID uint) ([]models.CartResponse, error)
-	Update(ctx context.Context, input models.CartUpdate,cartID uuid.UUID, userID uint) (models.CartResponse, error)
 	Delete(ctx context.Context, cartID uuid.UUID, userID uint)(error)
+	Increment(ctx context.Context, cartID uuid.UUID, userID uint)(error)
+	Decrement(ctx context.Context, cartID uuid.UUID, userID uint)(error)
 }
 
 type CartRepo struct {
@@ -26,51 +27,32 @@ func NewCartRepository(db *gorm.DB) CartRepository {
 	}
 }
 
-func (repo *CartRepo) Create(ctx context.Context, input models.CartInput, userID uint) (models.CartResponse, error) {
+func (repo *CartRepo) Create(ctx context.Context, input models.CartInput, userID uint) (error) {
 	var existingCart models.Cart
 
 	err := repo.DB.WithContext(ctx).Where("product_id = ? AND user_id = ?", input.ProductID, userID).First(&existingCart).Error
 	if err == nil {
-		existingCart.Quantity += input.Quantity
+		existingCart.Quantity += 1
 		err = repo.DB.WithContext(ctx).Save(&existingCart).Error
 		if err != nil {
-			return models.CartResponse{}, err
+			return err
 		}
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		newCart := models.Cart{
 			UserID:    userID,
 			ProductID: input.ProductID,
-			Quantity:  input.Quantity,
+			Quantity:  1,
 		}
 		err = repo.DB.WithContext(ctx).Create(&newCart).Error
 		if err != nil {
-			return models.CartResponse{}, err
+			return err
 		}
 		existingCart = newCart
 	} else {
-		return models.CartResponse{}, err
+		return err
 	}
 
-	err = repo.DB.WithContext(ctx).Preload("Product").First(&existingCart, existingCart.ID).Error
-	if err != nil {
-		return models.CartResponse{}, err
-	}
-
-	product := models.CartProduct{
-		ID:       &existingCart.Product.ID,
-		Name:     &existingCart.Product.Name,
-		Price:    &existingCart.Product.Price,
-		Stock:    &existingCart.Product.Stock,
-		ImageUrl: &existingCart.Product.ImageUrl,
-	}
-
-	response := models.CartResponse{
-		ID:       &existingCart.ID,
-		Quantity: &existingCart.Quantity,
-		Product:  &product,
-	}
-
-	return response, nil
+	return nil
 }
 
 func (repo *CartRepo) GetList(ctx context.Context, userID uint) ([]models.CartResponse, error) {
@@ -100,58 +82,69 @@ func (repo *CartRepo) GetList(ctx context.Context, userID uint) ([]models.CartRe
 
 }
 
-func (repo *CartRepo) Update(ctx context.Context, input models.CartUpdate,cartID uuid.UUID, userID uint) (models.CartResponse, error) {
-	var existingCart models.Cart
-
-	err := repo.DB.WithContext(ctx).Preload("Product").First(&existingCart, cartID).Error
-	if err != nil {
-		return models.CartResponse{}, err
-	}
-
-	if existingCart.User.ID != userID {
-		return models.CartResponse{}, errors.New("forbiden")
-	}
-
-	existingCart.Quantity = input.Quantity
-	err = repo.DB.WithContext(ctx).Save(&existingCart).Error
-	if err != nil {
-		return models.CartResponse{}, err
-	}
-
-	product := models.CartProduct{
-		ID:       &existingCart.Product.ID,
-		Name:     &existingCart.Product.Name,
-		Price:    &existingCart.Product.Price,
-		Stock:    &existingCart.Product.Stock,
-		ImageUrl: &existingCart.Product.ImageUrl,
-	}
-
-	response := models.CartResponse{
-		ID:       &existingCart.ID,
-		Quantity: &existingCart.Quantity,
-		Product:  &product,
-	}
-
-	return response, nil
-}
-
-
 func (repo *CartRepo) Delete(ctx context.Context, cartID uuid.UUID, userID uint) error {
-	var existingCart models.Cart 
-	err := repo.DB.WithContext(ctx).Preload("User").First(&existingCart,&cartID).Error
+	var cart models.Cart 
+	err := repo.DB.WithContext(ctx).Preload("User").First(&cart,&cartID).Error
 	if err != nil {
 		return err
 	}
 
-	if existingCart.User.ID != userID {
+	if cart.User.ID != userID {
 		return errors.New("forbiden")
 	}
 
-	err = repo.DB.WithContext(ctx).Delete(&existingCart).Error
+	err = repo.DB.WithContext(ctx).Delete(&cart).Error
 	if err != nil {
 		return err
 	}
 
 	return nil
 
+}
+
+func (repo *CartRepo) Increment(ctx context.Context, cartID uuid.UUID, userID uint) (error){
+	var cart models.Cart
+	err := repo.DB.WithContext(ctx).Preload("User").First(&cart,&cartID).Error
+	if err != nil {
+		return err
+	}
+
+
+	if cart.User.ID != userID {
+		return errors.New("forbiden")
+	}
+
+	cart.Quantity += 1
+	err = repo.DB.WithContext(ctx).Save(&cart).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *CartRepo) Decrement(ctx context.Context, cartID uuid.UUID, userID uint) (error){
+	var cart models.Cart
+	err := repo.DB.WithContext(ctx).Preload("User").First(&cart,&cartID).Error
+	if err != nil {
+		return err
+	}
+
+
+	if cart.User.ID != userID {
+		return errors.New("forbiden")
+	}
+
+	if cart.Quantity == 1 {
+		err = repo.DB.WithContext(ctx).Delete(&cart).Error
+		if err != nil {
+			return err
+		}
+	} else {
+		cart.Quantity -= 1
+		err = repo.DB.WithContext(ctx).Save(&cart).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

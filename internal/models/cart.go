@@ -25,19 +25,10 @@ func (cart *Cart) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (p *Product) AfterDelete(tx *gorm.DB) error {
-	return tx.Where("product_id = ?", p.ID).Delete(&Cart{}).Error
-}
-
-
 type CartInput struct {
 	ProductID uuid.UUID `json:"product_id"`
-	Quantity  int16     `json:"quantity"`
 }
 
-type CartUpdate struct {
-	Quantity  int16     `json:"quantity"`
-}
 
 type CartResponse struct {
 	ID       *uuid.UUID   `json:"id"`

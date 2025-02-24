@@ -64,8 +64,9 @@ func (app *application) mount() http.Handler {
 			r.Use(JWTAuthMiddleware)
 			r.Post("/create", app.CreatecartHandler)
 			r.Get("/", app.GetCartsHandler)
-			r.Put("/{id}",app.UpdateCartHandler)
 			r.Delete("/{id}", app.DeleteCartHandler)
+			r.Post("/increase/{id}", app.IncrementCartHandler)
+			r.Post("/decrease/{id}", app.DecrementsCartHandler)
 		})
 	})
 
