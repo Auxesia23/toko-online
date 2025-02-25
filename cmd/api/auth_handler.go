@@ -50,7 +50,7 @@ func (app *application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := app.User.Login(context.Background(), input.Email, input.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 

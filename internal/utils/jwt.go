@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Auxesia23/toko-online/internal/env"
 	"github.com/Auxesia23/toko-online/internal/models"
 	"github.com/golang-jwt/jwt"
 )
 
-var jwtSecret = []byte("my-secret-key")
+var jwtSecret = []byte(env.GetString("SECRET_KEY","my-secret"))
 
 func GenerateToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
