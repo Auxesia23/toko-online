@@ -18,6 +18,7 @@ type Order struct {
 
 	User       User        `json:"user" gorm:"foreignKey:UserID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
 	OrderItems []OrderItem `json:"order_items" gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Payment    Payment     `json:"payment" gorm:"foreignKey:OrderID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
 }
 
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
