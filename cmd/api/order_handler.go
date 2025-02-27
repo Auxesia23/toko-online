@@ -48,7 +48,7 @@ func (app *application) GetListOrderhanlder(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(orders)
+	json.NewEncoder(w).Encode(&orders)
 }
 
 func (app *application) GetOrderHandler(w http.ResponseWriter, r *http.Request) {
@@ -73,5 +73,25 @@ func (app *application) GetOrderHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(order)
+	json.NewEncoder(w).Encode(&order)
+}
+
+func (app *application) CreatePaymentHandler (w http.ResponseWriter, r *http.Request){
+	orderIDStr := chi.URLParam(r, "id")
+	orderID, err := uuid.Parse(orderIDStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	payment, err := app.Order.CreatePayment(context.Background(),orderID)
+	if err != nil {
+		http.Error(w,err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&payment)
 }

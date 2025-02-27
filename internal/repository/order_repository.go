@@ -5,14 +5,16 @@ import (
 	"errors"
 
 	"github.com/Auxesia23/toko-online/internal/models"
+	"github.com/Auxesia23/toko-online/internal/payment"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type OrderRepository interface {
 	Create(ctx context.Context, userID uint, order models.OrderInput) error
-	GetList(ctx context.Context, userID uint)([]models.OrderResponse, error)
-	GetByID(ctx context.Context, userID uint, orderID uuid.UUID)(models.OrderResponse, error)
+	GetList(ctx context.Context, userID uint) ([]models.OrderResponse, error)
+	GetByID(ctx context.Context, userID uint, orderID uuid.UUID) (models.OrderResponse, error)
+	CreatePayment(ctx context.Context, orderID uuid.UUID) (models.Payment, error)
 }
 
 type OrderRepo struct {
@@ -94,39 +96,40 @@ func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.Ord
 	return nil
 }
 
-func (repo *OrderRepo) GetList(ctx context.Context, userID uint)([]models.OrderResponse, error){
+func (repo *OrderRepo) GetList(ctx context.Context, userID uint) ([]models.OrderResponse, error) {
 	var orders []models.Order
-	err := repo.DB.WithContext(ctx).Preload("OrderItems.Product").Where("user_id = ?", userID).Find(&orders).Error
+	err := repo.DB.WithContext(ctx).Preload("Payment").Preload("OrderItems.Product").Where("user_id = ?", userID).Find(&orders).Error
 	if err != nil {
 		return []models.OrderResponse{}, err
 	}
 
 	var orderResponses []models.OrderResponse
-	for _,order := range(orders){
+	for _, order := range orders {
 		var itemResponse []models.OrderItemResponse
-		for _,item := range(order.OrderItems){
+		for _, item := range order.OrderItems {
 			itemResponse = append(itemResponse, models.OrderItemResponse{
-				Quantity: &item.Quantity,
-				ProductName: &item.Product.Name,
-				ProductPrice: &item.Product.Price,
+				Quantity:        &item.Quantity,
+				ProductName:     &item.Product.Name,
+				ProductPrice:    &item.Product.Price,
 				ProductImageUrl: &item.Product.ImageUrl,
 			})
 		}
 		orderResponses = append(orderResponses, models.OrderResponse{
-			ID: &order.ID,
+			ID:         &order.ID,
 			TotalPrice: &order.TotalPrice,
-			Status: &order.Status,
-			CreatedAt: &order.CreatedAt,
+			Status:     &order.Status,
+			CreatedAt:  &order.CreatedAt,
 			OrderItems: &itemResponse,
+			Payment:    &order.Payment,
 		})
 	}
-	
+
 	return orderResponses, nil
 }
 
-func (repo *OrderRepo) GetByID(ctx context.Context, userID uint, orderID uuid.UUID)(models.OrderResponse, error){
+func (repo *OrderRepo) GetByID(ctx context.Context, userID uint, orderID uuid.UUID) (models.OrderResponse, error) {
 	var order models.Order
-	err := repo.DB.WithContext(ctx).Preload("OrderItems.Product").First(&order,&orderID).Error
+	err := repo.DB.WithContext(ctx).Preload("Payment").Preload("OrderItems.Product").First(&order, &orderID).Error
 	if err != nil {
 		return models.OrderResponse{}, err
 	}
@@ -136,22 +139,47 @@ func (repo *OrderRepo) GetByID(ctx context.Context, userID uint, orderID uuid.UU
 	}
 
 	var items []models.OrderItemResponse
-	for _, item := range(order.OrderItems){
+	for _, item := range order.OrderItems {
 		items = append(items, models.OrderItemResponse{
-			Quantity: &item.Quantity,
-			ProductName: &item.Product.Name,
-			ProductPrice: &item.Product.Price,
+			Quantity:        &item.Quantity,
+			ProductName:     &item.Product.Name,
+			ProductPrice:    &item.Product.Price,
 			ProductImageUrl: &item.Product.ImageUrl,
 		})
 	}
 
 	response := models.OrderResponse{
-		ID: &order.ID,
+		ID:         &order.ID,
 		TotalPrice: &order.TotalPrice,
-		Status: &order.Status,
-		CreatedAt: &order.CreatedAt,
+		Status:     &order.Status,
+		CreatedAt:  &order.CreatedAt,
 		OrderItems: &items,
+		Payment:    &order.Payment,
 	}
 
 	return response, nil
+}
+
+func (repo *OrderRepo) CreatePayment(ctx context.Context, orderID uuid.UUID) (models.Payment, error) {
+	var order models.Order
+	err := repo.DB.WithContext(ctx).Preload("OrderItems.Product").Preload("User").First(&order, orderID).Error
+	if err != nil {
+		return models.Payment{}, err
+	}
+
+	url, err := payment.CreateMidtransPayment(&order)
+	if err != nil {
+		return models.Payment{}, err
+	}
+
+	payment := models.Payment{
+		OrderID: order.ID,
+		Status:  "Pending",
+		Url:     url,
+	}
+	err = repo.DB.WithContext(ctx).Create(&payment).Error
+	if err != nil {
+		return models.Payment{}, err
+	}
+	return payment, nil
 }

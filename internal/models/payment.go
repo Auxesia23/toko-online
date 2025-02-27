@@ -11,6 +11,7 @@ type Payment struct {
 	ID      uuid.UUID `json:"id"`
 	OrderID uuid.UUID `json:"order_id" gorm:"not null"`
 	Status  string    `json:"status" gorm:"not null"`
+	Url     string    `json:"url"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -61,4 +61,5 @@ type OrderResponse struct {
 
 	CreatedAt  *time.Time
 	OrderItems *[]OrderItemResponse `json:"items"`
+	Payment    *Payment             `json:"payment"`
 }

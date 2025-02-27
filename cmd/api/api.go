@@ -75,6 +75,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/create", app.CreateOrderHanlder)
 			r.Get("/", app.GetListOrderhanlder)
 			r.Get("/{id}", app.GetOrderHandler)
+			r.Post("/{id}/create-payment", app.CreatePaymentHandler)
 		})
 	})
 

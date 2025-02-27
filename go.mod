@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.5.0
 	github.com/joho/godotenv v1.5.1
+	github.com/midtrans/midtrans-go v1.3.8
 	golang.org/x/crypto v0.33.0
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
