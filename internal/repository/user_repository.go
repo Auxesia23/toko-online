@@ -13,7 +13,8 @@ type UserRepository interface {
 	Create(ctx context.Context, user models.User) (models.UserResponse, error)
 	GetByID(ctx context.Context, id uint) (models.UserResponse, error)
 	Update(ctx context.Context, user models.User, id uint) (models.UserResponse, error)
-	Login(ctx context.Context, email string, password string)(string, error)
+	Login(ctx context.Context, email string, password string) (string, error)
+	GoogleLogin(ctx context.Context, code string) (string, error)
 }
 
 type UserRepo struct {
@@ -52,7 +53,7 @@ func (repo *UserRepo) GetByID(ctx context.Context, id uint) (models.UserResponse
 	}
 
 	response := models.UserResponse{
-		Name: &user.Name,
+		Name:  &user.Name,
 		Email: &user.Email,
 	}
 	return response, nil
@@ -70,21 +71,21 @@ func (repo *UserRepo) Update(ctx context.Context, user models.User, id uint) (mo
 	}
 
 	response := models.UserResponse{
-		Name: &existingUser.Name,
+		Name:  &existingUser.Name,
 		Email: &existingUser.Email,
 	}
 
 	return response, nil
 }
 
-func (repo *UserRepo) Login(ctx context.Context, email string, password string)(string, error){
+func (repo *UserRepo) Login(ctx context.Context, email string, password string) (string, error) {
 	var user models.User
 	err := repo.DB.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	if !utils.CheckPasswordHash(password, user.Password){
+	if !utils.CheckPasswordHash(password, user.Password) {
 		return "", errors.New("invalid credentials")
 	}
 
@@ -95,4 +96,39 @@ func (repo *UserRepo) Login(ctx context.Context, email string, password string)(
 
 	return token, nil
 
+}
+
+func (repo *UserRepo) GoogleLogin(ctx context.Context, code string) (string, error) {
+	token, err := utils.ExchangeCodeForToken(code)
+	if err != nil {
+		return "", err
+	}
+
+	userInfo, err := utils.FetchGoogleUserInfo(token.AccessToken)
+	if err != nil {
+		return "", err
+	}
+
+	var user models.User
+	result := repo.DB.Where("email = ?", userInfo.Email).First(&user)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			user = models.User{
+				Name:  userInfo.Name,
+				Email: userInfo.Email,
+			}
+			if err := repo.DB.Create(&user).Error; err != nil {
+				return "", err
+			}
+		} else {
+			return "", result.Error
+		}
+	}
+
+	jwt, err := utils.GenerateToken(&user)
+	if err != nil {
+		return "", err
+	}
+	return jwt, nil
 }
