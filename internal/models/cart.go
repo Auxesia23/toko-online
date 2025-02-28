@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Cart struct {
-	ID        uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	ID        uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	UserID    uint      `json:"user_id" gorm:"not null"`
 	ProductID uuid.UUID `json:"product_id" gorm:"not null"`
-	Quantity  int16     `json:"quantity" gorm:"type:int(8);not null"`
+	Quantity  int16     `json:"quantity" gorm:"not null"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -20,15 +19,9 @@ type Cart struct {
 	Product Product `json:"product" gorm:"foreignKey:ProductID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
 }
 
-func (cart *Cart) BeforeCreate(tx *gorm.DB) (err error) {
-	cart.ID = uuid.New()
-	return
-}
-
 type CartInput struct {
 	ProductID uuid.UUID `json:"product_id"`
 }
-
 
 type CartResponse struct {
 	ID       *uuid.UUID   `json:"id"`

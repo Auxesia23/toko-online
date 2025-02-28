@@ -28,11 +28,6 @@ func NewOrderRepository(db *gorm.DB) OrderRepository {
 }
 
 func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.OrderInput) error {
-	var cartIDs []uuid.UUID
-	for _, cart := range input.Carts {
-		cartIDs = append(cartIDs, cart.CartID)
-	}
-
 	tx := repo.DB.WithContext(ctx).Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -41,7 +36,7 @@ func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.Ord
 	}()
 
 	var carts []models.Cart
-	if err := tx.Preload("Product").Where("id IN ?", cartIDs).Find(&carts).Error; err != nil {
+	if err := tx.Preload("Product").Where("id IN ?", input.Carts).Find(&carts).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -167,15 +162,15 @@ func (repo *OrderRepo) CreatePayment(ctx context.Context, orderID uuid.UUID) (mo
 		return models.Payment{}, err
 	}
 
-	url, err := payment.CreateMidtransPayment(&order)
+	token, err := payment.CreateMidtransPayment(&order)
 	if err != nil {
 		return models.Payment{}, err
 	}
 
 	payment := models.Payment{
-		OrderID: order.ID,
-		Status:  "Pending",
-		Url:     url,
+		OrderID:       order.ID,
+		Status:        "Pending",
+		MidtransToken: token,
 	}
 	err = repo.DB.WithContext(ctx).Create(&payment).Error
 	if err != nil {

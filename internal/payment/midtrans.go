@@ -43,5 +43,5 @@ func CreateMidtransPayment(order *models.Order) (string, error) {
 	}
 
 	fmt.Println("Midtrans Snap URL:", snapResp.RedirectURL)
-	return snapResp.RedirectURL, nil
+	return snapResp.Token, nil
 }

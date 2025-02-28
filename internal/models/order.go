@@ -4,13 +4,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Order struct {
-	ID         uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	ID         uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	UserID     uint      `json:"user_id" gorm:"not null"`
-	TotalPrice int32     `json:"total_price" gorm:"type:int(12);not null"`
+	TotalPrice int32     `json:"total_price" gorm:"not null"` // Hapus `type:int(12)`
 	Status     string    `json:"status" gorm:"type:varchar(20);not null;default:'pending'"`
 
 	CreatedAt time.Time
@@ -21,30 +20,18 @@ type Order struct {
 	Payment    Payment     `json:"payment" gorm:"foreignKey:OrderID;constraint:OnUpdate:RESTRICT,OnDelete:CASCADE;"`
 }
 
-func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
-	order.ID = uuid.New()
-	return
-}
-
 type OrderItem struct {
-	ID        uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	ID        uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	OrderID   uuid.UUID `json:"order_id" gorm:"not null"`
 	ProductID uuid.UUID `json:"product_id" gorm:"not null"`
-	Quantity  int16     `json:"quantity" gorm:"type:int(8);not null"`
-	Price     int32     `json:"price" gorm:"type:int(12);not null"`
+	Quantity  int16     `json:"quantity" gorm:"not null"` // Hapus `type:int(8)`
+	Price     int32     `json:"price" gorm:"not null"`    // Hapus `type:int(12)`
 
 	Product Product `json:"product" gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 }
 
-func (orderItem *OrderItem) BeforeCreate(tx *gorm.DB) (err error) {
-	orderItem.ID = uuid.New()
-	return
-}
-
 type OrderInput struct {
-	Carts []struct {
-		CartID uuid.UUID `json:"cart_id"`
-	} `json:"carts"`
+	Carts []uuid.UUID `json:"carts"`
 }
 
 type OrderItemResponse struct {

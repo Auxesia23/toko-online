@@ -8,10 +8,10 @@ import (
 )
 
 type Payment struct {
-	ID      uuid.UUID `json:"id"`
-	OrderID uuid.UUID `json:"order_id" gorm:"not null"`
-	Status  string    `json:"status" gorm:"not null"`
-	Url     string    `json:"url"`
+	ID            uuid.UUID `json:"id"`
+	OrderID       uuid.UUID `json:"order_id" gorm:"not null"`
+	Status        string    `json:"status" gorm:"not null"`
+	MidtransToken string    `json:"token"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

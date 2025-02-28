@@ -8,12 +8,12 @@ import (
 )
 
 type Product struct {
-	ID          uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name        string    `json:"name" gorm:"type:varchar(100);not null"`
-	CategoryID  uint      `json:"category_id" gorm:"not null"`
+	CategoryID  uint     `json:"category_id" gorm:"not null"`
 	Description string    `json:"description" gorm:"type:varchar(255);not null"`
-	Price       int32     `json:"price" gorm:"type:int(12);not null"`
-	Stock       int16     `json:"stock" gorm:"type:int(8);not null"`
+	Price       int32       `json:"price" gorm:"not null"` 
+	Stock       int16     `json:"stock" gorm:"not null"`
 	ImageUrl    string    `json:"image_url" gorm:"type:varchar(100);not null"`
 
 	CreatedAt time.Time

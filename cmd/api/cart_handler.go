@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/Auxesia23/toko-online/internal/models"
@@ -16,6 +17,7 @@ func (app *application) CreatecartHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Invalid user claims", http.StatusUnauthorized)
 		return
 	}
+	log.Println(userID)
 
 	var input models.CartInput
 	err := json.NewDecoder(r.Body).Decode(&input)
