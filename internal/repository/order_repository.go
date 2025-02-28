@@ -11,10 +11,12 @@ import (
 )
 
 type OrderRepository interface {
-	Create(ctx context.Context, userID uint, order models.OrderInput) error
+	Create(ctx context.Context, userID uint, order models.OrderInput) (uuid.UUID, error)
 	GetList(ctx context.Context, userID uint) ([]models.OrderResponse, error)
+	Preview(ctx context.Context, userID uint, order models.OrderInput) (models.OrderPreview, error)
 	GetByID(ctx context.Context, userID uint, orderID uuid.UUID) (models.OrderResponse, error)
 	CreatePayment(ctx context.Context, orderID uuid.UUID) (models.Payment, error)
+	UpdatePaymentStatus(ctx context.Context, orderID uuid.UUID, midtransStatus string) error
 }
 
 type OrderRepo struct {
@@ -27,7 +29,7 @@ func NewOrderRepository(db *gorm.DB) OrderRepository {
 	}
 }
 
-func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.OrderInput) error {
+func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.OrderInput) (uuid.UUID, error) {
 	tx := repo.DB.WithContext(ctx).Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -38,14 +40,14 @@ func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.Ord
 	var carts []models.Cart
 	if err := tx.Preload("Product").Where("id IN ?", input.Carts).Find(&carts).Error; err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
 	var totalPrice int32 = 0
 	for _, cart := range carts {
 		if cart.Quantity > cart.Product.Stock {
 			tx.Rollback()
-			return errors.New("not enough stock for product: " + cart.Product.Name)
+			return uuid.UUID{}, errors.New("not enough stock for product: " + cart.Product.Name)
 		}
 		totalPrice += cart.Product.Price * int32(cart.Quantity)
 	}
@@ -53,11 +55,11 @@ func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.Ord
 	order := models.Order{
 		UserID:     userID,
 		TotalPrice: totalPrice,
-		Status:     "pending",
+		Status:     "Menunggu pembayaran",
 	}
 	if err := tx.Create(&order).Error; err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
 	var orderItems []models.OrderItem
@@ -73,22 +75,22 @@ func (repo *OrderRepo) Create(ctx context.Context, userID uint, input models.Ord
 			Where("id = ?", cart.ProductID).
 			UpdateColumn("stock", gorm.Expr("stock - ?", cart.Quantity)).Error; err != nil {
 			tx.Rollback()
-			return err
+			return uuid.UUID{}, err
 		}
 	}
 
 	if err := tx.Create(&orderItems).Error; err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
 	if err := tx.Delete(&carts).Error; err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
 	tx.Commit()
-	return nil
+	return order.ID, nil
 }
 
 func (repo *OrderRepo) GetList(ctx context.Context, userID uint) ([]models.OrderResponse, error) {
@@ -168,6 +170,7 @@ func (repo *OrderRepo) CreatePayment(ctx context.Context, orderID uuid.UUID) (mo
 	}
 
 	payment := models.Payment{
+		ID:            uuid.New(),
 		OrderID:       order.ID,
 		Status:        "Pending",
 		MidtransToken: token,
@@ -177,4 +180,70 @@ func (repo *OrderRepo) CreatePayment(ctx context.Context, orderID uuid.UUID) (mo
 		return models.Payment{}, err
 	}
 	return payment, nil
+}
+
+func (repo *OrderRepo) Preview(ctx context.Context, userID uint, order models.OrderInput) (models.OrderPreview, error) {
+	var orderItems []models.Cart
+	err := repo.DB.WithContext(ctx).Preload("Product").Where("id IN ?", order.Carts).Find(&orderItems).Error
+	if err != nil {
+		return models.OrderPreview{}, err
+	}
+
+	var totalPrice int32 = 0
+	var itemResponses []models.OrderItemResponse
+
+	for _, cart := range orderItems {
+		totalPrice += cart.Product.Price * int32(cart.Quantity)
+		itemResponses = append(itemResponses, models.OrderItemResponse{
+			Quantity:        &cart.Quantity,
+			ProductName:     &cart.Product.Name,
+			ProductPrice:    &cart.Product.Price,
+			ProductImageUrl: &cart.Product.ImageUrl,
+		})
+	}
+
+	response := models.OrderPreview{
+		TotalPrice: &totalPrice,
+		OrderItems: &itemResponses,
+	}
+
+	return response, nil
+}
+
+func (repo *OrderRepo) UpdatePaymentStatus(ctx context.Context, orderID uuid.UUID, midtransStatus string) error {
+	var paymentStatus string
+	var orderStatus string
+
+	switch midtransStatus {
+	case "capture", "settlement":
+		paymentStatus = "berhasil"
+		orderStatus = "Di Proses" 
+	case "pending":
+		paymentStatus = "menunggu"
+		orderStatus = "Menunggu Pembayaran"
+	case "deny", "cancel", "expire", "failure":
+		paymentStatus = "gagal"
+		orderStatus = "Gagal"
+	default:
+		paymentStatus = "menunggu"
+		orderStatus = "Menunggu Pembayaran"
+	}
+
+	tx := repo.DB.WithContext(ctx).Begin()
+
+	if err := tx.Model(&models.Payment{}).
+		Where("order_id = ?", orderID).
+		Update("status", paymentStatus).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(&models.Order{}).
+		Where("id = ?", orderID).
+		Update("status", orderStatus).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }

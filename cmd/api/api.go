@@ -72,10 +72,15 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/order", func(r chi.Router) {
 			r.Use(UserAuth)
+			r.Post("/preview", app.PreviewOrderHandler)
 			r.Post("/create", app.CreateOrderHanlder)
 			r.Get("/", app.GetListOrderhanlder)
 			r.Get("/{id}", app.GetOrderHandler)
 			r.Post("/{id}/create-payment", app.CreatePaymentHandler)
+		})
+
+		r.Route("/webhook",func(r chi.Router) {
+			r.Post("/midtrans", app.MidtransWebhookHandler)
 		})
 	})
 

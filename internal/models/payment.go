@@ -8,7 +8,7 @@ import (
 )
 
 type Payment struct {
-	ID            uuid.UUID `json:"id"`
+	ID            uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	OrderID       uuid.UUID `json:"order_id" gorm:"not null"`
 	Status        string    `json:"status" gorm:"not null"`
 	MidtransToken string    `json:"token"`
@@ -16,9 +16,4 @@ type Payment struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-}
-
-func (payment *Payment) BeforeCreate(tx *gorm.DB) (err error) {
-	payment.ID = uuid.New()
-	return
 }
