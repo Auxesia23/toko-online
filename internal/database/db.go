@@ -11,7 +11,6 @@ import (
 )
 
 func InitDB() *gorm.DB {
-	// Ganti dengan konfigurasi database PostgreSQL kamu
 	host := env.GetString("DB_HOST", "localhost")
 	port := env.GetString("DB_PORT", "5432")
 	user := env.GetString("DB_USER", "root")

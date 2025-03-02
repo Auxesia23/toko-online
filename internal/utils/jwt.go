@@ -9,7 +9,12 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-var jwtSecret = []byte(env.GetString("SECRET_KEY","my-secret"))
+var jwtSecret []byte
+
+func InitJwt() {
+	secret := env.GetString("SECRET_KEY", "")
+	jwtSecret = []byte(secret)
+}
 
 func GenerateToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
