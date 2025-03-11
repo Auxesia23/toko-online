@@ -85,6 +85,10 @@ func (repo *UserRepo) Login(ctx context.Context, email string, password string) 
 		return "", errors.New("invalid credentials")
 	}
 
+	if !user.Verified {
+		return "", errors.New("email not verified")
+	}
+
 	if !utils.CheckPasswordHash(password, user.Password) {
 		return "", errors.New("invalid credentials")
 	}
@@ -117,6 +121,8 @@ func (repo *UserRepo) GoogleLogin(ctx context.Context, code string) (string, err
 			user = models.User{
 				Name:  userInfo.Name,
 				Email: userInfo.Email,
+				Picture: userInfo.Picture,
+				Verified: userInfo.VerifiedEmail,
 			}
 			if err := repo.DB.Create(&user).Error; err != nil {
 				return "", err

@@ -21,6 +21,7 @@ func GenerateToken(user *models.User) (string, error) {
 		"user_id":      user.ID,
 		"is_superuser": user.Superuser,
 		"email":        user.Email,
+		"picture":      user.Picture,
 		"exp":          time.Now().Add(time.Hour * 24).Unix(),
 		"iat":          time.Now().Unix(),
 	}
