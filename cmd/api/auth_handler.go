@@ -40,6 +40,21 @@ func (app *application) RegisterHanlder(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(newUser)
 }
 
+func (app *application) VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "missing token", http.StatusUnauthorized)
+		return
+	}
+
+	err := app.User.Verify(context.Background(), token)
+	if err != nil {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func (app *application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var input models.UserLogin
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -59,7 +74,6 @@ func (app *application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
-
 func (app *application) GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 
@@ -72,5 +86,4 @@ func (app *application) GoogleCallbackHandler(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
-
 }

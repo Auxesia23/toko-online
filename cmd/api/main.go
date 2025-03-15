@@ -17,9 +17,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	
 	utils.SetupGoogleOAuth()
-	utils.InitJwt()
+	utils.InitUtils()
 
 	cfg := config{
 		addr: env.GetString("PORT", ":8000"),

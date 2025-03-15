@@ -53,6 +53,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/register", app.RegisterHanlder)
 			r.Post("/login", app.LoginHandler)
 			r.Get("/google/callback", app.GoogleCallbackHandler)
+			r.Post("/verify", app.VerifyEmailHandler)
 		})
 
 		r.Route("/product", func(r chi.Router) {

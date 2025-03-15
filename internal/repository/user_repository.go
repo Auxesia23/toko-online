@@ -7,10 +7,12 @@ import (
 	"github.com/Auxesia23/toko-online/internal/models"
 	"github.com/Auxesia23/toko-online/internal/utils"
 	"gorm.io/gorm"
+	"github.com/golang-jwt/jwt"
 )
 
 type UserRepository interface {
 	Create(ctx context.Context, user models.User) (models.UserResponse, error)
+	Verify(ctx context.Context, token string)(error)
 	GetByID(ctx context.Context, id uint) (models.UserResponse, error)
 	Update(ctx context.Context, user models.User, id uint) (models.UserResponse, error)
 	Login(ctx context.Context, email string, password string) (string, error)
@@ -38,6 +40,15 @@ func (repo *UserRepo) Create(ctx context.Context, user models.User) (models.User
 		return models.UserResponse{}, err
 	}
 
+	var newUser models.User
+	err = repo.DB.WithContext(ctx).First(&newUser, user.ID).Error
+	if err != nil {
+		return models.UserResponse{}, err
+	}
+	
+	token, _ := utils.GenerateToken(&user)
+	_ = utils.SendVerificationEmail(user.Email, token)
+
 	response := models.UserResponse{
 		Name:  &user.Name,
 		Email: &user.Email,
@@ -45,6 +56,31 @@ func (repo *UserRepo) Create(ctx context.Context, user models.User) (models.User
 
 	return response, nil
 }
+
+func (repo *UserRepo) Verify(ctx context.Context, token string) error {
+	jwtToken, err := utils.VerifyJWT(token)
+	if err != nil {
+		return err
+	}
+
+	claims := jwtToken.Claims.(jwt.MapClaims)
+	userIDFloat := claims["user_id"].(float64)
+	userID := uint(userIDFloat)
+
+	var user models.User
+	err = repo.DB.WithContext(ctx).First(&user, userID).Error
+	if err != nil {
+		return err
+	}
+
+	err = repo.DB.WithContext(ctx).Model(&user).Update("verified", true).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 
 func (repo *UserRepo) GetByID(ctx context.Context, id uint) (models.UserResponse, error) {
 	var user models.User

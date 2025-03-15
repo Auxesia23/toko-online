@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Auxesia23/toko-online/internal/env"
 	"github.com/Auxesia23/toko-online/internal/models"
 	"github.com/golang-jwt/jwt"
 )
 
 var jwtSecret []byte
-
-func InitJwt() {
-	secret := env.GetString("SECRET_KEY", "")
-	jwtSecret = []byte(secret)
+func init (){
+	jwtSecret = []byte(secretKey)
 }
 
 func GenerateToken(user *models.User) (string, error) {
@@ -25,7 +22,6 @@ func GenerateToken(user *models.User) (string, error) {
 		"exp":          time.Now().Add(time.Hour * 24).Unix(),
 		"iat":          time.Now().Unix(),
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
